@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['type', 'name'])]
 class Inode extends Model
@@ -23,6 +24,14 @@ class Inode extends Model
     ///////////////////////////////////////////////////////////////////////////
     public function parent(): BelongsTo {
         return $this->belongsTo(self::class);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    public function contents(): HasMany {
+        return $this
+            ->hasMany(self::class, 'parent_id')
+            ->orderBy('type')
+            ->orderBy('name');
     }
 
     ///////////////////////////////////////////////////////////////////////////
