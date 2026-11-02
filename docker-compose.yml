@@ -1,0 +1,13 @@
+name: inodebox
+
+services:
+  inodebox-app:
+    build:
+      context: ./
+      dockerfile: ./docker/php/Dockerfile
+    image: inodebox-app
+    container_name: inodebox-app
+    restart: unless-stopped
+    working_dir: /var/www/inodebox
+    volumes:
+      - ./:/var/www/inodebox
