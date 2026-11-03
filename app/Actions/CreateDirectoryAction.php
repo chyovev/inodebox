@@ -3,10 +3,12 @@
 namespace App\Actions;
 
 use App\Enums\InodeTypeEnum;
+use App\Events\InodeCreated;
 use App\Exceptions\ValidationException;
 use App\Models\Inode;
 use App\Validation\StateRulePools\CreateDirectoryStateRulePool;
 use App\Validation\StateValidator;
+use Illuminate\Support\Facades\DB;
 
 class CreateDirectoryAction
 {
@@ -23,13 +25,20 @@ class CreateDirectoryAction
     /**
      * @throws ValidationException
      */
-    public function execute(Inode $parent, string $fileName): void {
-        $this->validator->validate($this->rulePool->get($parent, $fileName));
+    public function execute(Inode $parent, string $dirName): void {
+        $this->validator->validate($this->rulePool->get($parent, $dirName));
         
-        $parent->children()->create([
-            'name' => $fileName,
-            'type' => InodeTypeEnum::DIRECTORY,
-        ]);
+        DB::transaction(function() use($parent, $dirName): void {
+            $inode = new Inode([
+                'name' => $dirName,
+                'type' => InodeTypeEnum::DIRECTORY,
+            ]);
+
+            $inode->parent()->associate($parent);
+            $inode->save();
+
+            InodeCreated::dispatch($inode);
+        });
     }
 
 }

@@ -3,10 +3,12 @@
 namespace Tests\Actions;
 
 use App\Actions\CreateFileAction;
+use App\Events\InodeCreated;
 use App\Exceptions\ValidationException;
 use App\Models\Inode;
 use App\Validation\StateValidator;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Event;
 use Mockery\MockInterface;
 use Tests\TestCase;
 
@@ -38,6 +40,8 @@ class CreateFileActionTest extends TestCase
             $mock->shouldReceive('validate')->andReturnNull();
         });
 
+        Event::fake();
+
         $this->app->make(CreateFileAction::class)->execute($inode, $fileName);
 
         $children = $inode->children()->get();
@@ -47,6 +51,8 @@ class CreateFileActionTest extends TestCase
         $this->assertSame($inode->id, $file->parent_id);
         $this->assertSame('test.pdf', $file->name);
         $this->assertTrue($file->isFile());
+
+        Event::assertDispatched(InodeCreated::class);
     }
 
 }

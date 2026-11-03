@@ -26,7 +26,7 @@ class DeleteInodeAction
     public function execute(Inode $inode): void {
         $this->validator->validate($this->rulePool->get($inode));
 
-        // child nodes are automatically deleted on a database level,
+        // child nodes and indices are automatically deleted on a database level,
         // no need to delete them explicitly via code
         DB::transaction(function() use($inode): void {
             $inode->delete();

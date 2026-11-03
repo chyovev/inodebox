@@ -3,10 +3,12 @@
 namespace Tests\Actions;
 
 use App\Actions\CreateDirectoryAction;
+use App\Events\InodeCreated;
 use App\Exceptions\ValidationException;
 use App\Models\Inode;
 use App\Validation\StateValidator;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Event;
 use Mockery\MockInterface;
 use Tests\TestCase;
 
@@ -38,6 +40,8 @@ class CreateDirectoryActionTest extends TestCase
             $mock->shouldReceive('validate')->andReturnNull();
         });
 
+        Event::fake();
+
         $this->app->make(CreateDirectoryAction::class)->execute($inode, $dirName);
 
         $children = $inode->children()->get();
@@ -47,6 +51,8 @@ class CreateDirectoryActionTest extends TestCase
         $this->assertSame($inode->id, $file->parent_id);
         $this->assertSame('test', $file->name);
         $this->assertTrue($file->isDirectory());
+
+        Event::assertDispatched(InodeCreated::class);
     }
 
 }

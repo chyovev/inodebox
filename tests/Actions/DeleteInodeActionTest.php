@@ -7,6 +7,7 @@ use App\Exceptions\ValidationException;
 use App\Models\Inode;
 use App\Validation\StateValidator;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
 use Mockery\MockInterface;
 use Tests\TestCase;
 
@@ -28,7 +29,8 @@ class DeleteInodeActionTest extends TestCase
     ///////////////////////////////////////////////////////////////////////////
     public function test_action_executed_successfully(): void {
         $inode = Inode::factory()->directory()->create();
-        Inode::factory()->for($inode, 'parent')->file()->create();
+        $child = Inode::factory()->for($inode, 'parent')->file()->create();
+        $inode->recursiveChildren()->sync([$child->id]);
 
         $this->mock(StateValidator::class, function(MockInterface $mock): void {
             $mock->shouldReceive('validate')->andReturnNull();
@@ -36,11 +38,13 @@ class DeleteInodeActionTest extends TestCase
 
         $this->assertSame(1, Inode::where('id',        $inode->id)->count());
         $this->assertSame(1, Inode::where('parent_id', $inode->id)->count());
+        $this->assertSame(1, DB::table('inode_index')->count());
 
         $this->app->make(DeleteInodeAction::class)->execute($inode);
 
         $this->assertSame(0, Inode::where('id',        $inode->id)->count());
         $this->assertSame(0, Inode::where('parent_id', $inode->id)->count());
+        $this->assertSame(0, DB::table('inode_index')->count());
     }
 
 }
