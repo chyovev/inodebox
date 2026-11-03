@@ -78,7 +78,7 @@ return [
     'in' => 'The selected :attribute is invalid.',
     'inode' => [
         'illegal_name'       => 'The :attribute field has illegal characters',
-        'name_already_taken' => 'The specified value :value for :attribute field is already taken',
+        'name_already_taken' => 'The specified value :value is already taken',
         'not_directory'      => 'The target location is not a directory',
         'is_root'            => 'You cannot alter the root directory',
     ],

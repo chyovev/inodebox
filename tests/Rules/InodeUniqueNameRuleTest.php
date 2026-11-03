@@ -35,7 +35,7 @@ class InodeUniqueNameRuleTest extends TestCase
 
         $name = 'test2';
 
-        $this->assertSame(['The specified value test2 for parent field is already taken'], $this->getValidationErrors($inode, $name));
+        $this->assertSame(['The specified value test2 is already taken'], $this->getValidationErrors($inode, $name));
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -49,7 +49,7 @@ class InodeUniqueNameRuleTest extends TestCase
 
         $name = 'test2';
 
-        $this->assertSame(['The specified value test2 for parent field is already taken'], $this->getValidationErrors($inode, $name));
+        $this->assertSame(['The specified value test2 is already taken'], $this->getValidationErrors($inode, $name));
     }
 
     ///////////////////////////////////////////////////////////////////////////
