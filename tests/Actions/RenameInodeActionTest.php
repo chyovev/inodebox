@@ -2,7 +2,6 @@
 
 namespace Tests\Actions;
 
-use App\Actions\CreateFileAction;
 use App\Actions\RenameInodeAction;
 use App\Exceptions\ValidationException;
 use App\Models\Inode;

@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Actions\CreateDirectoryAction;
 use App\Actions\CreateFileAction;
+use App\Actions\DeleteInodeAction;
 use App\Actions\RenameInodeAction;
+use App\Exceptions\ValidationException;
 use App\Http\Requests\CreateDirectoryRequest;
 use App\Http\Requests\CreateFileRequest;
 use App\Http\Requests\RenameInodeRequest;
@@ -18,6 +20,7 @@ class InodeController
     ///////////////////////////////////////////////////////////////////////////
     /**
      * @throws ModelNotFoundException inode not found
+     * @throws ValidationException
      */
     public function create_file(Inode $inode, CreateFileRequest $request, CreateFileAction $action): Response {
         $action->execute($inode, $request->getFileName());
@@ -32,6 +35,7 @@ class InodeController
     ///////////////////////////////////////////////////////////////////////////
     /**
      * @throws ModelNotFoundException inode not found
+     * @throws ValidationException
      */
     public function create_directory(Inode $inode, CreateDirectoryRequest $request, CreateDirectoryAction $action): Response {
         $action->execute($inode, $request->getDirName());
@@ -46,6 +50,7 @@ class InodeController
     ///////////////////////////////////////////////////////////////////////////
     /**
      * @throws ModelNotFoundException inode not found
+     * @throws ValidationException
      */
     public function rename_inode(Inode $inode, RenameInodeRequest $request, RenameInodeAction $action): Response {
         $action->execute($inode, $request->getName());
@@ -54,6 +59,17 @@ class InodeController
         // front-end is expected to refresh the contents of the
         // parent inode to have it listed in alphabetical order
         return response()->make();
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    /**
+     * @throws ModelNotFoundException inode not found
+     * @throws ValidationException
+     */
+    public function delete_inode(Inode $inode, DeleteInodeAction $action): Response {
+        $action->execute($inode);
+        
+        return response()->make()->setStatusCode(Response::HTTP_NO_CONTENT);
     }
     
 }
