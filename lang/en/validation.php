@@ -80,6 +80,7 @@ return [
         'illegal_name'       => 'The :attribute field has illegal characters',
         'name_already_taken' => 'The specified value :value for :attribute field is already taken',
         'not_directory'      => 'The target location is not a directory',
+        'is_root'            => 'You cannot alter the root directory',
     ],
     'in_array' => 'The :attribute field must exist in :other.',
     'in_array_keys' => 'The :attribute field must contain at least one of the following keys: :values.',
