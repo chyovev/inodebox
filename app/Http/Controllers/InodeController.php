@@ -5,17 +5,27 @@ namespace App\Http\Controllers;
 use App\Actions\CreateDirectoryAction;
 use App\Actions\CreateFileAction;
 use App\Actions\DeleteInodeAction;
+use App\Actions\FilterNestedFilesAction;
 use App\Actions\RenameInodeAction;
 use App\Exceptions\ValidationException;
 use App\Http\Requests\CreateDirectoryRequest;
 use App\Http\Requests\CreateFileRequest;
+use App\Http\Requests\FilterNestedFilesRequest;
 use App\Http\Requests\RenameInodeRequest;
+use App\Http\Resources\FilteredInodeResource;
 use App\Models\Inode;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Response;
 
 class InodeController
 {
+
+    ///////////////////////////////////////////////////////////////////////////
+    public function filter_nested_files(Inode $inode, FilterNestedFilesRequest $request, FilterNestedFilesAction $action): Response {
+        $files = $action->execute($inode, $request->getSearchParam());
+
+        return response()->make(FilteredInodeResource::collection($files));
+    }
 
     ///////////////////////////////////////////////////////////////////////////
     /**

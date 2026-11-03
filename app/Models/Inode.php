@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\InodeTypeEnum;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -46,7 +47,7 @@ class Inode extends Model
     public function recursiveChildren(): BelongsToMany {
         return $this
             ->belongsToMany(self::class, 'inode_index', 'parent_id', 'child_id', 'id', 'id')
-            ->orderBy('id');
+            ->orderBy('name');
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -64,6 +65,11 @@ class Inode extends Model
     ///////////////////////////////////////////////////////////////////////////
     public function isFile(): bool {
         return $this->type === InodeTypeEnum::FILE;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    public function scopeFiles(Builder $query): void {
+        $query->where('type', InodeTypeEnum::FILE);
     }
 
     ///////////////////////////////////////////////////////////////////////////
