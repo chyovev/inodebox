@@ -19,7 +19,7 @@ class InodeIsNotRootRuleTest extends TestCase
 
     ///////////////////////////////////////////////////////////////////////////
     public function test_rule_fails(): void {
-        $inode = Inode::factory()->directory()->make(['id' => Inode::ROOT_ID]);
+        $inode = Inode::factory()->root()->make();
 
         $this->assertSame(['You cannot alter the root directory'], $this->getValidationErrors($inode));
     }

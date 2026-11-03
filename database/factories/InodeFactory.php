@@ -33,4 +33,13 @@ class InodeFactory extends Factory
             'type' => InodeTypeEnum::DIRECTORY,
         ]);
     }
+
+    ///////////////////////////////////////////////////////////////////////////
+    public function root(): static {
+        return $this->state(fn(): array => [
+            'id'   => Inode::ROOT_ID,
+            'type' => InodeTypeEnum::DIRECTORY,
+        ]);
+    }
+
 }
