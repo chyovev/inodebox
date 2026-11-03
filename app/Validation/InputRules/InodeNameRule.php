@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Rules;
+namespace App\Validation\InputRules;
 
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 
-class InodeValidNameRule implements ValidationRule
+class InodeNameRule implements ValidationRule
 {
 
     ///////////////////////////////////////////////////////////////////////////

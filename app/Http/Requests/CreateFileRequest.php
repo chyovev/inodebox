@@ -2,10 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Inode;
-use App\Rules\InodeIsDirectoryRule;
-use App\Rules\InodeUniqueNameRule;
-use App\Rules\InodeValidNameRule;
+use App\Validation\InputRules\InodeNameRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CreateFileRequest extends FormRequest
@@ -14,24 +11,13 @@ class CreateFileRequest extends FormRequest
     ///////////////////////////////////////////////////////////////////////////
     public function rules(): array {
         return [
-            'name' => [
-                'required',
-                'string',
-                new InodeIsDirectoryRule($this->getParent()),
-                new InodeValidNameRule,
-                new InodeUniqueNameRule($this->getParent()),
-            ],
+            'name' => ['required', 'string', new InodeNameRule],
         ];
     }
 
     ///////////////////////////////////////////////////////////////////////////
     public function getFileName(): string {
         return $this->validated('name');
-    }
-
-    ///////////////////////////////////////////////////////////////////////////
-    private function getParent(): Inode {
-        return $this->route('inode');
     }
 
 }

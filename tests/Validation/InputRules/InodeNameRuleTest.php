@@ -1,12 +1,12 @@
 <?php
 
-namespace Tests\Rules;
+namespace Tests\Validation\InputRules;
 
-use App\Rules\InodeValidNameRule;
+use App\Validation\InputRules\InodeNameRule;
 use Illuminate\Support\Facades\Validator;
 use Tests\TestCase;
 
-class InodeValidNameRuleTest extends TestCase
+class InodeNameRuleTest extends TestCase
 {
 
     ///////////////////////////////////////////////////////////////////////////
@@ -39,7 +39,7 @@ class InodeValidNameRuleTest extends TestCase
 
     ///////////////////////////////////////////////////////////////////////////
     private function getValidationErrors(string $value): array {
-        $rule      = new InodeValidNameRule;
+        $rule      = new InodeNameRule;
         $attribute = 'name';
 
         return Validator::make([$attribute => $value], [$attribute => [$rule]])->errors()->all();
