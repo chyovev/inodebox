@@ -4,13 +4,13 @@ namespace App\Validation\StateRules;
 
 use App\Models\Inode;
 
-class InodeUniqueNameRule implements StateRule
+class InodeUniqueChildNameRule implements StateRule
 {
 
     ///////////////////////////////////////////////////////////////////////////
     public function __construct(
         private Inode  $inode,
-        private string $inodeName,
+        private string $childName,
         private ?Inode $skipChild = null,
     ) {
         //
@@ -24,31 +24,31 @@ class InodeUniqueNameRule implements StateRule
     ///////////////////////////////////////////////////////////////////////////
     public function getMessage(): string {
         return __('validation.inode.name_already_taken', [
-            'value' => $this->inodeName,
+            'value' => $this->childName,
         ]);
     }
 
     ///////////////////////////////////////////////////////////////////////////
     /**
-     * Check if any of the direct children (contents) of a node
-     * shares the same name as the specified one, regardless
-     * of the node's type.
+     * Check if any of the direct children of a node shares the
+     * same name as the specified one, regardless of the child's
+     * type.
      * 
      * NB! When an inode gets renamed, it's the inode's parent's
-     *     contents which should be iterated, but the actual inode
+     *     children which should be iterated, but the actual inode
      *     should be skipped (rejected) from the check as using
-     *     its current name for a new name would lead to a false
-     *     positive otherwise.
+     *     its current name for a new name would otherwise lead to
+     *     a false positive otherwise.
      */
     private function isNameUnique(): bool {
         return $this
             ->inode
-            ->contents
+            ->children
             ->reject(function(Inode $inode): bool {
                 return $inode->id === $this->skipChild?->id;
             })
             ->filter(function(Inode $inode): bool {
-                return $inode->name === $this->inodeName;
+                return $inode->name === $this->childName;
             })
             ->isEmpty();
     }

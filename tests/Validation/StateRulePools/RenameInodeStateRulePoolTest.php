@@ -5,7 +5,7 @@ namespace Tests\Validation\StateRulePools;
 use App\Models\Inode;
 use App\Validation\StateRulePools\RenameInodeStateRulePool;
 use App\Validation\StateRules\InodeIsNotRootRule;
-use App\Validation\StateRules\InodeUniqueNameRule;
+use App\Validation\StateRules\InodeUniqueChildNameRule;
 use Tests\TestCase;
 
 class RenameInodeStateRulePoolTest extends TestCase
@@ -23,7 +23,7 @@ class RenameInodeStateRulePoolTest extends TestCase
 
         $this->assertSame([
             InodeIsNotRootRule::class,
-            InodeUniqueNameRule::class,
+            InodeUniqueChildNameRule::class,
         ], array_map('get_class', $rules));
     }
 

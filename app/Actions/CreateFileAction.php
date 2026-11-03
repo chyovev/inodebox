@@ -26,7 +26,7 @@ class CreateFileAction
     public function execute(Inode $parent, string $fileName): void {
         $this->validator->validate($this->rulePool->get($parent, $fileName));
 
-        $parent->contents()->create([
+        $parent->children()->create([
             'name' => $fileName,
             'type' => InodeTypeEnum::FILE,
         ]);

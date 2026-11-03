@@ -5,7 +5,7 @@ namespace Tests\Validation\StateRulePools;
 use App\Models\Inode;
 use App\Validation\StateRulePools\CreateDirectoryStateRulePool;
 use App\Validation\StateRules\InodeIsDirectoryRule;
-use App\Validation\StateRules\InodeUniqueNameRule;
+use App\Validation\StateRules\InodeUniqueChildNameRule;
 use Tests\TestCase;
 
 class CreateDirectoryStateRulePoolTest extends TestCase
@@ -20,7 +20,7 @@ class CreateDirectoryStateRulePoolTest extends TestCase
 
         $this->assertSame([
             InodeIsDirectoryRule::class,
-            InodeUniqueNameRule::class,
+            InodeUniqueChildNameRule::class,
         ], array_map('get_class', $rules));
     }
 

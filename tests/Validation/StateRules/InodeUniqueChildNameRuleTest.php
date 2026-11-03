@@ -3,10 +3,10 @@
 namespace Tests\Validation\StateRules;
 
 use App\Models\Inode;
-use App\Validation\StateRules\InodeUniqueNameRule;
+use App\Validation\StateRules\InodeUniqueChildNameRule;
 use Tests\TestCase;
 
-class InodeUniqueNameRuleTest extends TestCase
+class InodeUniqueChildNameRuleTest extends TestCase
 {
 
     ///////////////////////////////////////////////////////////////////////////
@@ -16,11 +16,11 @@ class InodeUniqueNameRuleTest extends TestCase
         $child1 = Inode::factory()->directory()->make(['name' => 'test1']);
         $child2 = Inode::factory()->file()     ->make(['name' => 'test2']);
 
-        $inode->setRelation('contents', collect([$child1, $child2]));
+        $inode->setRelation('children', collect([$child1, $child2]));
 
         $name = 'test';
 
-        $this->assertTrue((new InodeUniqueNameRule($inode, $name))->isValid());
+        $this->assertTrue((new InodeUniqueChildNameRule($inode, $name))->isValid());
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -30,11 +30,11 @@ class InodeUniqueNameRuleTest extends TestCase
         $child1 = Inode::factory()->directory()->make(['id' => 101, 'name' => 'test1']);
         $child2 = Inode::factory()->file()     ->make(['id' => 102, 'name' => 'test2']);
 
-        $inode->setRelation('contents', collect([$child1, $child2]));
+        $inode->setRelation('children', collect([$child1, $child2]));
 
         $name = 'test2';
 
-        $this->assertTrue((new InodeUniqueNameRule($inode, $name, $child2))->isValid());
+        $this->assertTrue((new InodeUniqueChildNameRule($inode, $name, $child2))->isValid());
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -44,11 +44,11 @@ class InodeUniqueNameRuleTest extends TestCase
         $child1 = Inode::factory()->directory()->make(['id' => 101, 'name' => 'test1']);
         $child2 = Inode::factory()->file()     ->make(['id' => 102, 'name' => 'test2']);
 
-        $inode->setRelation('contents', collect([$child1, $child2]));
+        $inode->setRelation('children', collect([$child1, $child2]));
 
         $name = 'test2';
 
-        $this->assertFalse((new InodeUniqueNameRule($inode, $name))->isValid());
+        $this->assertFalse((new InodeUniqueChildNameRule($inode, $name))->isValid());
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -57,7 +57,7 @@ class InodeUniqueNameRuleTest extends TestCase
 
         $name = 'test2';
 
-        $this->assertSame('The specified value test2 is already taken', (new InodeUniqueNameRule($inode, $name))->getMessage());
+        $this->assertSame('The specified value test2 is already taken', (new InodeUniqueChildNameRule($inode, $name))->getMessage());
     }
 
 }

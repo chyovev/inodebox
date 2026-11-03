@@ -27,7 +27,7 @@ class Inode extends Model
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    public function contents(): HasMany {
+    public function children(): HasMany {
         return $this
             ->hasMany(self::class, 'parent_id')
             ->orderBy('type')

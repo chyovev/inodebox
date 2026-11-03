@@ -27,10 +27,10 @@ class CreateDirectoryActionTest extends TestCase
 
     ///////////////////////////////////////////////////////////////////////////
     public function test_action_executed_successfully(): void {
-        $inode = Inode::factory()->directory()->create();
-        $contents = $inode->contents;
+        $inode    = Inode::factory()->directory()->create();
+        $children = $inode->children;
 
-        $this->assertCount(0, $contents);
+        $this->assertCount(0, $children);
 
         $dirName = 'test';
 
@@ -40,10 +40,10 @@ class CreateDirectoryActionTest extends TestCase
 
         $this->app->make(CreateDirectoryAction::class)->execute($inode, $dirName);
 
-        $contents = $inode->contents()->get();
-        $file     = $contents->first();
+        $children = $inode->children()->get();
+        $file     = $children->first();
 
-        $this->assertCount(1, $contents);
+        $this->assertCount(1, $children);
         $this->assertSame($inode->id, $file->parent_id);
         $this->assertSame('test', $file->name);
         $this->assertTrue($file->isDirectory());
