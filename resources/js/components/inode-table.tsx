@@ -47,6 +47,62 @@ const CREATE_TITLES: Record<CreateKind, string> = {
     directory: 'New directory',
 };
 
+// ---------------------------------------------------------------------------
+// Request tracking: every backend call goes through apiFetch, which keeps a
+// count of in-flight requests so the preloader can be shown while any is pending.
+// ---------------------------------------------------------------------------
+
+let pendingRequests = 0;
+const pendingListeners = new Set<() => void>();
+
+function changePendingRequests(delta: number): void {
+    pendingRequests += delta;
+    pendingListeners.forEach((listener) => listener());
+}
+
+function apiFetch(input: string, init?: RequestInit): Promise<Response> {
+    changePendingRequests(1);
+
+    // hidden once the response (or a network error) arrives
+    return fetch(input, init).finally(() => changePendingRequests(-1));
+}
+
+function usePendingRequests(): number {
+    const [count, setCount] = useState<number>(pendingRequests);
+
+    useEffect(() => {
+        const listener = () => setCount(pendingRequests);
+
+        pendingListeners.add(listener);
+        listener();
+
+        return () => {
+            pendingListeners.delete(listener);
+        };
+    }, []);
+
+    return count;
+}
+
+function Preloader() {
+    const pending = usePendingRequests();
+
+    if (pending === 0) {
+        return null;
+    }
+
+    return (
+        <div
+            role="status"
+            aria-live="polite"
+            aria-label="Loading"
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40"
+        >
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" />
+        </div>
+    );
+}
+
 const ICON_CLASS = 'h-4 w-4';
 
 function FileIcon() {
@@ -109,7 +165,7 @@ export default function InodeTable({ initialId = ROOT_ID }: Props) {
         setLoading(true);
         setError(null);
 
-        fetch(`/api/inodes/${id}`, {
+        apiFetch(`/api/inodes/${id}`, {
             headers: { Accept: 'application/json' },
             signal: controller.signal,
         })
@@ -204,7 +260,7 @@ export default function InodeTable({ initialId = ROOT_ID }: Props) {
         setCreateError(null);
 
         try {
-            const response = await fetch(
+            const response = await apiFetch(
                 `/api/inodes/${createTarget.parentId}/${CREATE_ENDPOINTS[createTarget.kind]}`,
                 {
                     method: 'POST',
@@ -246,7 +302,7 @@ export default function InodeTable({ initialId = ROOT_ID }: Props) {
         setDeletingId(target.id);
 
         try {
-            const response = await fetch(`/api/inodes/${target.id}`, {
+            const response = await apiFetch(`/api/inodes/${target.id}`, {
                 method: 'DELETE',
                 headers: { Accept: 'application/json' },
             });
@@ -317,6 +373,7 @@ export default function InodeTable({ initialId = ROOT_ID }: Props) {
 
     return (
         <div className="mx-auto w-full max-w-3xl p-4 text-sm text-[#1b1b18] dark:text-[#EDEDEC]">
+            <Preloader />
             <h1 className="mb-4 text-5xl font-bold tracking-tight">Inodebox</h1>
 
             <InodeSearch onSelect={openDirectory} />
@@ -527,7 +584,7 @@ function InodeSearch({ onSelect }: InodeSearchProps) {
         setSearchError(null);
 
         const timer = window.setTimeout(() => {
-            fetch(`/api/inodes/${ROOT_ID}/files/filter?${new URLSearchParams({ search: term })}`, {
+            apiFetch(`/api/inodes/${ROOT_ID}/files/filter?${new URLSearchParams({ search: term })}`, {
                 headers: { Accept: 'application/json' },
                 signal: controller.signal,
             })
