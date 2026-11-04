@@ -226,6 +226,32 @@ export default function InodeTable({ initialId = ROOT_ID }: Props) {
         setId(targetId);
     };
 
+    // Directories are opened directly. Files are requested first: the backend
+    // rejects listing a file, in which case the user stays in the current folder.
+    const openEntry = async (entry: { id: number; name: string; type: 'Directory' | 'File' }) => {
+        if (entry.type === 'Directory') {
+            openDirectory(entry.id);
+            return;
+        }
+
+        try {
+            const response = await apiFetch(`/api/inodes/${entry.id}`, {
+                headers: { Accept: 'application/json' },
+            });
+
+            if (!response.ok) {
+                throw new Error(await readErrorMessage(response));
+            }
+
+            openDirectory(entry.id);
+        } catch (err) {
+            setToast({
+                kind: 'error',
+                message: `Could not open "${entry.name}": ${err instanceof Error ? err.message : 'Unknown error'}`,
+            });
+        }
+    };
+
     const openCreateDialog = (parentId: number, kind: CreateKind) => {
         setName('');
         setCreateError(null);
@@ -437,17 +463,17 @@ export default function InodeTable({ initialId = ROOT_ID }: Props) {
                         {rows.map((row) => (
                             <tr key={`${row.type}-${row.id}`} className="border-t border-[#e3e3e0] dark:border-[#3E3E3A]">
                                 <td className="px-3 py-2">
-                                    {row.type === 'Directory' ? (
-                                        <button
-                                            type="button"
-                                            onClick={() => openDirectory(row.id)}
-                                            className="font-medium text-[#f53003] hover:underline dark:text-[#FF4433]"
-                                        >
-                                            {row.name}
-                                        </button>
-                                    ) : (
-                                        <span>{row.name}</span>
-                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => openEntry(row)}
+                                        className={
+                                            row.type === 'Directory'
+                                                ? 'font-medium text-[#f53003] hover:underline dark:text-[#FF4433]'
+                                                : 'text-left hover:underline'
+                                        }
+                                    >
+                                        {row.name}
+                                    </button>
                                 </td>
                                 <td className="px-3 py-2 text-[#706f6c] dark:text-[#A1A09A]">{row.type}</td>
                                 <td className="px-3 py-2 text-right">
