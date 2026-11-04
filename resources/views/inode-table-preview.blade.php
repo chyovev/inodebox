@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>InodeTable preview</title>
+        <title>Inodebox</title>
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/inode-table-preview.tsx'])
     </head>
