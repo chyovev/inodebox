@@ -6,11 +6,13 @@ use App\Actions\CreateDirectoryAction;
 use App\Actions\CreateFileAction;
 use App\Actions\DeleteInodeAction;
 use App\Actions\FilterNestedFilesAction;
+use App\Actions\ListContentsAction;
 use App\Exceptions\ValidationException;
 use App\Http\Requests\CreateDirectoryRequest;
 use App\Http\Requests\CreateFileRequest;
 use App\Http\Requests\FilterNestedFilesRequest;
 use App\Http\Resources\FilteredInodeResource;
+use App\Http\Resources\InodeContentsResource;
 use App\Models\Inode;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Response;
@@ -23,6 +25,17 @@ class InodeController
         $files = $action->execute($inode, $request->getSearchParam());
 
         return response()->make(FilteredInodeResource::collection($files));
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    /**
+     * @throws ModelNotFoundException inode not found
+     * @throws ValidationException
+     */
+    public function list_contents(Inode $inode, ListContentsAction $action): Response {
+        $action->execute($inode);
+
+        return response()->make(InodeContentsResource::make($inode));
     }
 
     ///////////////////////////////////////////////////////////////////////////
