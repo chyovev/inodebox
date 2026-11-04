@@ -35,10 +35,12 @@ class ListContentsActionTest extends TestCase
         });
 
         $this->assertFalse($inode->relationLoaded('children'));
+        $this->assertFalse($inode->relationLoaded('recursiveParents'));
 
         $this->app->make(ListContentsAction::class)->execute($inode);
 
         $this->assertTrue($inode->relationLoaded('children'));
+        $this->assertTrue($inode->relationLoaded('recursiveParents'));
     }
 
 }

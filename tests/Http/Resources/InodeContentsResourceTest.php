@@ -21,6 +21,7 @@ class InodeContentsResourceTest extends TestCase
 
         $this->assertSame(json_encode([
             'name' => 'Documents',
+            'parents' => [],
             'directories' => [
                 [
                     'id'   => 2,

@@ -25,7 +25,7 @@ class ListContentsAction
     public function execute(Inode $inode): void {
         $this->validator->validate($this->rulePool->get($inode));
 
-        $inode->load('children');
+        $inode->load(['children', 'recursiveParents']);
     }
 
 }

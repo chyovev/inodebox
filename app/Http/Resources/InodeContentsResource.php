@@ -27,6 +27,7 @@ class InodeContentsResource extends JsonResource
     public function toArray(Request $request): array {
         return [
             'name'        => $this->resource->name,
+            'parents'     => InodeParentChainResource::collection($this->resource->recursiveParents),
             'directories' => InodeContentsInodeResource::collection($this->getDirectories()),
             'files'       => InodeContentsInodeResource::collection($this->getFiles()),
         ];

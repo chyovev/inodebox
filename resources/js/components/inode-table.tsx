@@ -7,6 +7,7 @@ export type InodeEntry = {
 
 export type InodeContents = {
     name: string;
+    parents: InodeEntry[];
     directories: InodeEntry[];
     files: InodeEntry[];
 };
@@ -145,7 +146,6 @@ const iconButtonClass =
 
 export default function InodeTable({ initialId = ROOT_ID }: Props) {
     const [id, setId] = useState<number>(initialId);
-    const [history, setHistory] = useState<number[]>([]);
     const [data, setData] = useState<InodeContents | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
@@ -223,19 +223,7 @@ export default function InodeTable({ initialId = ROOT_ID }: Props) {
     }, [createTarget, submitting]);
 
     const openDirectory = (targetId: number) => {
-        setHistory((prev) => [...prev, id]);
         setId(targetId);
-    };
-
-    const goBack = () => {
-        const previous = history[history.length - 1];
-
-        if (previous === undefined) {
-            return;
-        }
-
-        setHistory(history.slice(0, -1));
-        setId(previous);
     };
 
     const openCreateDialog = (parentId: number, kind: CreateKind) => {
@@ -288,8 +276,7 @@ export default function InodeTable({ initialId = ROOT_ID }: Props) {
 
     // Deletes an inode and reports the outcome with a toast. If the deleted
     // inode is the folder being viewed, the user is returned to its parent:
-    // the previous folder in the navigation history, or the root when the
-    // view was opened directly.
+    // its parent folder, or the root when the folder has no known parent.
     const deleteInode = async (target: { id: number; name: string }, isCurrent: boolean) => {
         const message = isCurrent
             ? `Delete the folder "${target.name}" and everything in it?`
@@ -314,9 +301,9 @@ export default function InodeTable({ initialId = ROOT_ID }: Props) {
             setToast({ kind: 'success', message: `Deleted "${target.name}".` });
 
             if (isCurrent) {
-                const parent = history[history.length - 1];
-                setHistory(parent === undefined ? [] : history.slice(0, -1));
-                setId(parent ?? ROOT_ID);
+                // the nearest parent is the last ancestor (ancestors are ordered by id)
+                const parent = data?.parents[data.parents.length - 1];
+                setId(parent?.id ?? ROOT_ID);
             } else {
                 setReloadKey((key) => key + 1);
             }
@@ -364,6 +351,19 @@ export default function InodeTable({ initialId = ROOT_ID }: Props) {
         </button>
     );
 
+    // Breadcrumb: root, then every ancestor (root excluded), then the current folder
+    const breadcrumbs = data
+        ? id === ROOT_ID
+            ? [{ id: ROOT_ID, name: '/', current: true }]
+            : [
+                  { id: ROOT_ID, name: '/', current: false },
+                  ...data.parents
+                      .filter((parent) => parent.id !== ROOT_ID)
+                      .map((parent) => ({ id: parent.id, name: parent.name, current: false })),
+                  { id, name: data.name, current: true },
+              ]
+        : null;
+
     const rows = data
         ? [
               ...data.directories.map((entry) => ({ ...entry, type: 'Directory' as const })),
@@ -380,15 +380,28 @@ export default function InodeTable({ initialId = ROOT_ID }: Props) {
 
             <div className="mb-3 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={goBack}
-                        disabled={history.length === 0 || loading}
-                        className="rounded-sm border border-[#e3e3e0] px-3 py-1 hover:bg-[#f5f5f3] disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#3E3E3A] dark:hover:bg-[#1f1f1d]"
-                    >
-                        Back
-                    </button>
-                    <h2 className="font-medium">{data?.name ?? '…'}</h2>
+                    {breadcrumbs ? (
+                        <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1 font-medium">
+                            {breadcrumbs.map((crumb, index) => (
+                                <span key={`${crumb.id}-${index}`} className="flex items-center gap-1">
+                                    {index >= 2 && <span className="text-[#706f6c] dark:text-[#A1A09A]">/</span>}
+                                    {crumb.current ? (
+                                        <span aria-current="page">{crumb.name}</span>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => openDirectory(crumb.id)}
+                                            className="text-[#f53003] hover:underline dark:text-[#FF4433]"
+                                        >
+                                            {crumb.name}
+                                        </button>
+                                    )}
+                                </span>
+                            ))}
+                        </nav>
+                    ) : (
+                        <h2 className="font-medium">…</h2>
+                    )}
                 </div>
                 {loading && <span className="text-[#706f6c] dark:text-[#A1A09A]">Loading…</span>}
             </div>
