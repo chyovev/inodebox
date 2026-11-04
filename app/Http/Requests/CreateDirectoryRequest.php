@@ -11,7 +11,7 @@ class CreateDirectoryRequest extends FormRequest
     ///////////////////////////////////////////////////////////////////////////
     public function rules(): array {
         return [
-            'name' => ['required', 'string', new InodeNameRule],
+            'name' => ['required', 'string', 'min:1', 'max:255', new InodeNameRule],
         ];
     }
 

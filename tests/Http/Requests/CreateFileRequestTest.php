@@ -16,10 +16,12 @@ class CreateFileRequestTest extends TestCase
         $rules = $request->rules();
 
         $this->assertCount(1, $rules);
-        $this->assertCount(3, $rules['name']);
+        $this->assertCount(5, $rules['name']);
 
         $this->assertSame('required', $rules['name'][0]);
         $this->assertSame('string', $rules['name'][1]);
-        $this->assertSame(InodeNameRule::class, get_class($rules['name'][2]));
+        $this->assertSame('min:1', $rules['name'][2]);
+        $this->assertSame('max:255', $rules['name'][3]);
+        $this->assertSame(InodeNameRule::class, get_class($rules['name'][4]));
     }
 }
