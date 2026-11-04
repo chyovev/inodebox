@@ -16,6 +16,21 @@ services:
     networks:
       - inodebox
 
+  inodebox-vite:
+    image: inodebox-app
+    container_name: inodebox-vite
+    depends_on:
+      - inodebox-app
+    restart: unless-stopped
+    working_dir: /var/www/inodebox
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    ports:
+      - '${DOCKER_FORWARD_PORT_VITE:-5173}:5173'
+    volumes:
+      - ./:/var/www/inodebox
+    networks:
+      - inodebox
+
   inodebox-mysql:
     image: 'mysql:8.4'
     container_name: inodebox-mysql

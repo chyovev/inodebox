@@ -10,7 +10,7 @@ import { defineConfig, lazyPlugins } from 'vite-plus';
 export default defineConfig({
     plugins: lazyPlugins(() => [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.tsx'],
+            input: ['resources/css/app.css', 'resources/js/app.tsx', 'resources/js/inode-table-preview.tsx'],
             refresh: true,
             fonts: [
                 bunny('Instrument Sans', {
@@ -29,6 +29,12 @@ export default defineConfig({
         }),
     ]),
     server: {
+        // Serve asset URLs as localhost so the browser can load them from the
+        // Docker-published port (the hot file would otherwise say 0.0.0.0)
+        origin: 'http://localhost:5173',
+        // Dev server runs in Docker; allow the Laravel page origin to load modules
+        cors: true,
+        allowedHosts: true,
         watch: {
             ignored: [
                 '**/.agents/**',
