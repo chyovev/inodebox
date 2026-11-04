@@ -26,7 +26,7 @@ class InodeControllerCreateDirectoryTest extends TestCase
         $inode    = Inode::factory()->directory()->create();
         $response = $this->post(route('create_directory', ['inode' => $inode]));
 
-        $this->assertSame(422, $response->getStatusCode());
+        $this->assertSame(400, $response->getStatusCode());
     }
 
     ///////////////////////////////////////////////////////////////////////////

@@ -26,7 +26,7 @@ class InodeControllerFilterNestedFilesTest extends TestCase
         $inode    = Inode::factory()->directory()->create();
         $response = $this->get(route('filter_nested_files', ['inode' => $inode]));
 
-        $this->assertSame(422, $response->getStatusCode());
+        $this->assertSame(400, $response->getStatusCode());
     }
 
     ///////////////////////////////////////////////////////////////////////////
