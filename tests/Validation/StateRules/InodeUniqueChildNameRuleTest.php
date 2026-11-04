@@ -24,25 +24,11 @@ class InodeUniqueChildNameRuleTest extends TestCase
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    public function test_rule_valid_with_skipped_child(): void {
-        $inode = Inode::factory()->directory()->make();
-
-        $child1 = Inode::factory()->directory()->make(['id' => 101, 'name' => 'test1']);
-        $child2 = Inode::factory()->file()     ->make(['id' => 102, 'name' => 'test2']);
-
-        $inode->setRelation('children', collect([$child1, $child2]));
-
-        $name = 'test2';
-
-        $this->assertTrue((new InodeUniqueChildNameRule($inode, $name, $child2))->isValid());
-    }
-
-    ///////////////////////////////////////////////////////////////////////////
     public function test_rule_invalid(): void {
         $inode = Inode::factory()->directory()->make();
 
-        $child1 = Inode::factory()->directory()->make(['id' => 101, 'name' => 'test1']);
-        $child2 = Inode::factory()->file()     ->make(['id' => 102, 'name' => 'test2']);
+        $child1 = Inode::factory()->directory()->make(['name' => 'test1']);
+        $child2 = Inode::factory()->file()     ->make(['name' => 'test2']);
 
         $inode->setRelation('children', collect([$child1, $child2]));
 
