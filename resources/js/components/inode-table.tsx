@@ -402,7 +402,7 @@ export default function InodeTable({ initialId = ROOT_ID }: Props) {
             <Preloader />
             <h1 className="mb-4 text-5xl font-bold tracking-tight">Inodebox</h1>
 
-            <InodeSearch onSelect={openDirectory} />
+            <InodeSearch currentId={id} onSelect={openDirectory} />
 
             <div className="mb-3 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -595,13 +595,15 @@ async function readErrorMessage(response: Response): Promise<string> {
 const MIN_SEARCH_LENGTH = 3;
 const SEARCH_DEBOUNCE_MS = 300;
 
-// Route-level search: calls the filter endpoint on the root folder
+// Searches recursively inside the folder currently being listed
 type InodeSearchProps = {
+    /** Folder currently being listed; the search runs inside it */
+    currentId: number;
     /** Called with the ID of the directory that contains the selected result */
     onSelect: (parentId: number) => void;
 };
 
-function InodeSearch({ onSelect }: InodeSearchProps) {
+function InodeSearch({ currentId, onSelect }: InodeSearchProps) {
     const [query, setQuery] = useState<string>('');
     const [results, setResults] = useState<FilteredInode[] | null>(null);
     const [searching, setSearching] = useState<boolean>(false);
@@ -623,7 +625,7 @@ function InodeSearch({ onSelect }: InodeSearchProps) {
         setSearchError(null);
 
         const timer = window.setTimeout(() => {
-            apiFetch(`/api/inodes/${ROOT_ID}/files/filter?${new URLSearchParams({ search: term })}`, {
+            apiFetch(`/api/inodes/${currentId}/files/filter?${new URLSearchParams({ search: term })}`, {
                 headers: { Accept: 'application/json' },
                 signal: controller.signal,
             })
@@ -654,7 +656,7 @@ function InodeSearch({ onSelect }: InodeSearchProps) {
             window.clearTimeout(timer);
             controller.abort();
         };
-    }, [term]);
+    }, [term, currentId]);
 
     return (
         <section className="relative mb-6">
