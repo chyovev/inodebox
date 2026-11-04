@@ -18,12 +18,18 @@ type CreateTarget = {
     kind: CreateKind;
 };
 
+type Toast = {
+    kind: 'success' | 'error';
+    message: string;
+};
+
 type Props = {
     /** Inode to list on first render. Defaults to the root directory (1). */
     initialId?: number;
 };
 
 const ROOT_ID = 1;
+const TOAST_DURATION_MS = 4000;
 
 const CREATE_ENDPOINTS: Record<CreateKind, string> = {
     file: 'files',
@@ -56,10 +62,24 @@ function FolderIcon() {
     );
 }
 
-const ICONS: Record<CreateKind, () => ReactNode> = {
+function TrashIcon() {
+    return (
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={ICON_CLASS}>
+            <path d="M3 6h18" />
+            <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+            <path d="M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14" />
+            <path d="M10 11v6M14 11v6" />
+        </svg>
+    );
+}
+
+const CREATE_ICONS: Record<CreateKind, () => ReactNode> = {
     file: FileIcon,
     directory: FolderIcon,
 };
+
+const iconButtonClass =
+    'flex h-7 w-7 items-center justify-center rounded-sm border border-[#e3e3e0] hover:bg-white disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#3E3E3A] dark:hover:bg-[#161615]';
 
 export default function InodeTable({ initialId = ROOT_ID }: Props) {
     const [id, setId] = useState<number>(initialId);
@@ -68,6 +88,9 @@ export default function InodeTable({ initialId = ROOT_ID }: Props) {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
     const [reloadKey, setReloadKey] = useState<number>(0);
+
+    const [toast, setToast] = useState<Toast | null>(null);
+    const [deletingId, setDeletingId] = useState<number | null>(null);
 
     const [createTarget, setCreateTarget] = useState<CreateTarget | null>(null);
     const [name, setName] = useState<string>('');
@@ -108,6 +131,17 @@ export default function InodeTable({ initialId = ROOT_ID }: Props) {
 
         return () => controller.abort();
     }, [id, reloadKey]);
+
+    // Auto-dismiss toasts
+    useEffect(() => {
+        if (!toast) {
+            return;
+        }
+
+        const timer = window.setTimeout(() => setToast(null), TOAST_DURATION_MS);
+
+        return () => window.clearTimeout(timer);
+    }, [toast]);
 
     // Close the dialog on Escape
     useEffect(() => {
@@ -177,18 +211,7 @@ export default function InodeTable({ initialId = ROOT_ID }: Props) {
             );
 
             if (!response.ok) {
-                let message = `Request failed with status ${response.status}`;
-
-                try {
-                    const body = (await response.json()) as { error?: string };
-                    if (body.error) {
-                        message = body.error;
-                    }
-                } catch {
-                    // response had no JSON body, keep the generic message
-                }
-
-                throw new Error(message);
+                throw new Error(await readErrorMessage(response));
             }
 
             setCreateTarget(null);
@@ -201,10 +224,54 @@ export default function InodeTable({ initialId = ROOT_ID }: Props) {
         }
     };
 
+    // Deletes an inode and reports the outcome with a toast. If the deleted
+    // inode is the folder being viewed, the user is returned to its parent:
+    // the previous folder in the navigation history, or the root when the
+    // view was opened directly.
+    const deleteInode = async (target: { id: number; name: string }, isCurrent: boolean) => {
+        const message = isCurrent
+            ? `Delete the folder "${target.name}" and everything in it?`
+            : `Delete "${target.name}"?`;
+
+        if (!window.confirm(message)) {
+            return;
+        }
+
+        setDeletingId(target.id);
+
+        try {
+            const response = await fetch(`/api/inodes/${target.id}`, {
+                method: 'DELETE',
+                headers: { Accept: 'application/json' },
+            });
+
+            if (!response.ok) {
+                throw new Error(await readErrorMessage(response));
+            }
+
+            setToast({ kind: 'success', message: `Deleted "${target.name}".` });
+
+            if (isCurrent) {
+                const parent = history[history.length - 1];
+                setHistory(parent === undefined ? [] : history.slice(0, -1));
+                setId(parent ?? ROOT_ID);
+            } else {
+                setReloadKey((key) => key + 1);
+            }
+        } catch (err) {
+            setToast({
+                kind: 'error',
+                message: `Could not delete "${target.name}": ${err instanceof Error ? err.message : 'Unknown error'}`,
+            });
+        } finally {
+            setDeletingId(null);
+        }
+    };
+
     const addButtons = (parentId: number, disabled: boolean) => (
         <div className="inline-flex items-center gap-1.5">
             {(Object.keys(CREATE_TITLES) as CreateKind[]).map((kind) => {
-                const Icon = ICONS[kind];
+                const Icon = CREATE_ICONS[kind];
                 return (
                     <button
                         key={kind}
@@ -213,13 +280,26 @@ export default function InodeTable({ initialId = ROOT_ID }: Props) {
                         disabled={disabled}
                         aria-label={CREATE_TITLES[kind]}
                         title={CREATE_TITLES[kind]}
-                        className="flex h-7 w-7 items-center justify-center rounded-sm border border-[#e3e3e0] hover:bg-white disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#3E3E3A] dark:hover:bg-[#161615]"
+                        className={iconButtonClass}
                     >
                         <Icon />
                     </button>
                 );
             })}
         </div>
+    );
+
+    const deleteButton = (target: { id: number; name: string }, isCurrent: boolean, disabled: boolean) => (
+        <button
+            type="button"
+            onClick={() => deleteInode(target, isCurrent)}
+            disabled={disabled || deletingId !== null}
+            aria-label={isCurrent ? 'Delete this folder' : `Delete ${target.name}`}
+            title={isCurrent ? 'Delete this folder' : 'Delete'}
+            className={`${iconButtonClass} text-red-700 dark:text-red-400`}
+        >
+            <TrashIcon />
+        </button>
     );
 
     const rows = data
@@ -258,7 +338,12 @@ export default function InodeTable({ initialId = ROOT_ID }: Props) {
                         <tr>
                             <th className="px-3 py-2 font-medium">Name</th>
                             <th className="w-32 px-3 py-2 font-medium">Type</th>
-                            <th className="px-3 py-2 text-right font-medium">{addButtons(id, !data)}</th>
+                            <th className="px-3 py-2 text-right font-medium">
+                                <div className="inline-flex items-center gap-1.5">
+                                    {addButtons(id, !data)}
+                                    {data && deleteButton({ id, name: data.name }, true, false)}
+                                </div>
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
@@ -285,16 +370,43 @@ export default function InodeTable({ initialId = ROOT_ID }: Props) {
                                     )}
                                 </td>
                                 <td className="px-3 py-2 text-[#706f6c] dark:text-[#A1A09A]">{row.type}</td>
-                                <td className="px-3 py-2 text-right">{addButtons(row.id, false)}</td>
+                                <td className="px-3 py-2 text-right">
+                                    <div className="inline-flex items-center gap-1.5">
+                                        {addButtons(row.id, false)}
+                                        {deleteButton(row, false, false)}
+                                    </div>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
             </div>
 
+            {toast && (
+                <div
+                    role={toast.kind === 'error' ? 'alert' : 'status'}
+                    aria-live={toast.kind === 'error' ? 'assertive' : 'polite'}
+                    className={`fixed right-4 bottom-4 z-50 flex max-w-sm items-start gap-3 rounded-sm border px-4 py-3 shadow-lg ${
+                        toast.kind === 'error'
+                            ? 'border-red-300 bg-red-600 text-white dark:border-red-800'
+                            : 'border-green-300 bg-green-600 text-white dark:border-green-800'
+                    }`}
+                >
+                    <span className="flex-1">{toast.message}</span>
+                    <button
+                        type="button"
+                        onClick={() => setToast(null)}
+                        aria-label="Dismiss"
+                        className="leading-none opacity-80 hover:opacity-100"
+                    >
+                        ×
+                    </button>
+                </div>
+            )}
+
             {createTarget && (
                 <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+                    className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
                     onMouseDown={(event) => {
                         if (event.target === event.currentTarget && !submitting) {
                             closeDialog();
@@ -357,4 +469,19 @@ export default function InodeTable({ initialId = ROOT_ID }: Props) {
             )}
         </div>
     );
+}
+
+async function readErrorMessage(response: Response): Promise<string> {
+    let message = `Request failed with status ${response.status}`;
+
+    try {
+        const body = (await response.json()) as { error?: string };
+        if (body.error) {
+            message = body.error;
+        }
+    } catch {
+        // response had no JSON body, keep the generic message
+    }
+
+    return message;
 }
