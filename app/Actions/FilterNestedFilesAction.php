@@ -31,6 +31,7 @@ class FilterNestedFilesAction
             ->recursiveChildren()
             ->files()
             ->where('name', 'LIKE', "{$search}%")
+            ->limit(10)
             ->get();
     }
 

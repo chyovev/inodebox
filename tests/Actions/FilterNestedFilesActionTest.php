@@ -55,6 +55,31 @@ class FilterNestedFilesActionTest extends TestCase
     }
 
     ///////////////////////////////////////////////////////////////////////////
+    public function test_action_executed_successfully_limit_fetched_files(): void {
+        $root = Inode::find(Inode::ROOT_ID);
+
+        for ($i = 10; $i < 25; $i++) {
+            $nestedFile = Inode::factory()->file()->create(['name' => "test{$i}.pdf"]);
+            
+            $nestedFile->recursiveParents()->sync(collect([$root]));
+        }
+
+        $this->assertSame(15, $root->recursiveChildren->count());
+
+        $this->mock(StateValidator::class, function(MockInterface $mock): void {
+            $mock->shouldReceive('validate')->andReturnNull();
+        });
+
+        $search = 'test';
+
+        $files = $this->app->make(FilterNestedFilesAction::class)->execute($root, $search);
+
+        $this->assertCount(10, $files);
+        $this->assertSame('test10.pdf', $files->first()->name);
+        $this->assertSame('test19.pdf', $files->last()->name);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
     public function test_action_executed_successfully_filter_not_fetching_directories(): void {
         $root            = Inode::find(Inode::ROOT_ID);
         $directory       = Inode::factory()->directory()->create(['name' => 'Documents']);
