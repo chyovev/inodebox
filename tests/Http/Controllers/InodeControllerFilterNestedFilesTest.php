@@ -48,7 +48,7 @@ class InodeControllerFilterNestedFilesTest extends TestCase
         $response = $this->get(route('filter_nested_files', ['inode' => $inode]));
 
         $this->assertSame(200, $response->getStatusCode());
-        $this->assertSame('[{"parent_id":4,"name":"test.pdf"}]', $response->getContent());
+        $this->assertSame('[{"parents":[],"parent_id":4,"name":"test.pdf"}]', $response->getContent());
     }
 
 }

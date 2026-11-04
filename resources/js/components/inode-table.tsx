@@ -11,6 +11,12 @@ export type InodeContents = {
     files: InodeEntry[];
 };
 
+type FilteredInode = {
+    parents: InodeEntry[];
+    parent_id: number;
+    name: string;
+};
+
 type CreateKind = 'file' | 'directory';
 
 type CreateTarget = {
@@ -311,6 +317,10 @@ export default function InodeTable({ initialId = ROOT_ID }: Props) {
 
     return (
         <div className="mx-auto w-full max-w-3xl p-4 text-sm text-[#1b1b18] dark:text-[#EDEDEC]">
+            <h1 className="mb-4 text-5xl font-bold tracking-tight">Inodebox</h1>
+
+            <InodeSearch onSelect={openDirectory} />
+
             <div className="mb-3 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                     <button
@@ -484,4 +494,141 @@ async function readErrorMessage(response: Response): Promise<string> {
     }
 
     return message;
+}
+
+const MIN_SEARCH_LENGTH = 3;
+const SEARCH_DEBOUNCE_MS = 300;
+
+// Route-level search: calls the filter endpoint on the root folder
+type InodeSearchProps = {
+    /** Called with the ID of the directory that contains the selected result */
+    onSelect: (parentId: number) => void;
+};
+
+function InodeSearch({ onSelect }: InodeSearchProps) {
+    const [query, setQuery] = useState<string>('');
+    const [results, setResults] = useState<FilteredInode[] | null>(null);
+    const [searching, setSearching] = useState<boolean>(false);
+    const [searchError, setSearchError] = useState<string | null>(null);
+
+    const term = query.trim();
+
+    useEffect(() => {
+        if (term.length < MIN_SEARCH_LENGTH) {
+            setResults(null);
+            setSearchError(null);
+            setSearching(false);
+            return;
+        }
+
+        const controller = new AbortController();
+
+        setSearching(true);
+        setSearchError(null);
+
+        const timer = window.setTimeout(() => {
+            fetch(`/api/inodes/${ROOT_ID}/files/filter?${new URLSearchParams({ search: term })}`, {
+                headers: { Accept: 'application/json' },
+                signal: controller.signal,
+            })
+                .then(async (response) => {
+                    if (!response.ok) {
+                        throw new Error(await readErrorMessage(response));
+                    }
+
+                    return (await response.json()) as FilteredInode[];
+                })
+                .then((json) => setResults(json))
+                .catch((err: unknown) => {
+                    if (err instanceof DOMException && err.name === 'AbortError') {
+                        return;
+                    }
+
+                    setResults(null);
+                    setSearchError(err instanceof Error ? err.message : 'Unknown error');
+                })
+                .finally(() => {
+                    if (!controller.signal.aborted) {
+                        setSearching(false);
+                    }
+                });
+        }, SEARCH_DEBOUNCE_MS);
+
+        return () => {
+            window.clearTimeout(timer);
+            controller.abort();
+        };
+    }, [term]);
+
+    return (
+        <section className="relative mb-6">
+            <label htmlFor="inode-search" className="sr-only">
+                Search files
+            </label>
+            <input
+                id="inode-search"
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search files"
+                className="w-full rounded-sm border border-[#e3e3e0] bg-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#f53003]/40 dark:border-[#3E3E3A] dark:bg-[#161615]"
+            />
+
+            {term.length > 0 && (
+                <div className="absolute inset-x-0 top-full z-30 mt-1 max-h-80 overflow-y-auto rounded-sm border border-[#e3e3e0] bg-white p-2 shadow-lg dark:border-[#3E3E3A] dark:bg-[#161615]">
+                    {term.length < MIN_SEARCH_LENGTH && (
+                        <p className="px-1 py-1 text-xs text-[#706f6c] dark:text-[#A1A09A]">
+                            Type at least {MIN_SEARCH_LENGTH} characters to search.
+                        </p>
+                    )}
+
+                    {searchError && (
+                        <div role="alert" className="rounded-sm border border-red-300 bg-red-50 p-2 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+                            Search failed: {searchError}
+                        </div>
+                    )}
+
+                    {results && results.length === 0 && !searching && (
+                        <p className="px-1 py-1 text-[#706f6c] dark:text-[#A1A09A]">No files match "{term}".</p>
+                    )}
+
+                    {results && results.length > 0 && (
+                        <table className="w-full border-collapse text-left">
+                            <thead>
+                                <tr>
+                                    <th className="px-2 py-1.5 text-xs font-medium text-[#706f6c] dark:text-[#A1A09A]">Location</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {results.map((item, index) => {
+                                    // the root folder is named "/", so it is left out of the path
+                                    const segments = item.parents.filter((parent) => parent.id !== ROOT_ID).map((parent) => parent.name);
+                                    const prefix = segments.length > 0 ? `/${segments.join('/')}/` : '/';
+
+                                    return (
+                                        <tr key={`${item.parent_id}-${item.name}-${index}`} className="border-t border-[#e3e3e0] hover:bg-[#f5f5f3] dark:border-[#3E3E3A] dark:hover:bg-[#1f1f1d]">
+                                            <td className="p-0">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setQuery('');
+                                                        onSelect(item.parent_id);
+                                                    }}
+                                                    title="Open containing folder"
+                                                    className="block w-full px-2 py-1.5 text-left"
+                                                >
+                                                    <span className="text-[#706f6c] dark:text-[#A1A09A]">{prefix}</span>
+                                                    <span className="font-bold">{item.name}</span>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    )}
+                </div>
+            )}
+        </section>
+    );
 }

@@ -18,10 +18,11 @@ class FilteredInodeResourceTest extends TestCase
 
         $resource = FilteredInodeResource::make($inode);
 
-        $this->assertSame([
+        $this->assertSame(json_encode([
+            'parents'   => [],
             'parent_id' => 4,
             'name'      => 'test.pdf',
-        ], $resource->resolve(null));
+        ]), $resource->toJson(null));
     }
 
 }

@@ -52,6 +52,7 @@ class FilterNestedFilesActionTest extends TestCase
 
         $this->assertCount(1, $files);
         $this->assertSame('test123.pdf', $files->first()->name);
+        $this->assertTrue($files->first()->relationLoaded('recursiveParents'));
     }
 
     ///////////////////////////////////////////////////////////////////////////

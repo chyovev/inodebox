@@ -32,6 +32,7 @@ class FilterNestedFilesAction
             ->files()
             ->where('name', 'LIKE', "{$search}%")
             ->limit(10)
+            ->with('recursiveParents') // load eagerly for location generation and to prevent N+1 problem
             ->get();
     }
 
